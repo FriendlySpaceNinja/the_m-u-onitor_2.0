@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Muons</title>
+</head>
+<body>
+    <header>
+        <h1>Muons - Our invisible friends</h1>
+    </header>
+    
+    <section>
+        <p>
+        Muons are elementary particles belonging to the lepton family, similar to electrons but with a much greater mass. This is all explained by the Standard Model is a fundamental theory in physics that describes the basic building blocks of the universe and their interactions. It includes three of the four known fundamental forces (electromagnetic, weak, and strong interactions) and classifies all known elementary particles, including quarks, leptons, and bosons.
+        </p>
+        <img src="{{ url_for('static', filename='images/muon.png') }}" alt="Muon Diagram" style="max-width: 100%; height: auto;">
+        <p>
+        Muons are created when high-energy cosmic rays, primarily protons, collide with atoms in Earth's atmosphere. These collisions produce short-lived particles called pions, which quickly decay into muons and neutrinos. Muons, being more stable, can travel through the atmosphere and even penetrate deep into the Earth's surface before decaying into electrons and neutrinos. This makes them one of the most abundant particles reaching the Earth's surface from cosmic ray interactions.
+        </p>
+            
+        <img src="{{ url_for('static', filename='images/muon.png') }}" alt="Muon Diagram" style="max-width: 100%; height: auto;">
+                
+        <h2>The muon paradox</h2>
+        
+        <p>
+        Muons are created at an altitude of around 10 000 km and have a lifespan of about 2.2 microseconds and somehow we can detect them here on the Earth’s surface. This doesn’t sound like a problem at first, but using this simple formula for the velocity (v = d/t) we can determine that with such a short lifespan and such a long distance to travel, their velocities should reach 5x10<sup>12</sup> meters per second which is about 16 700 times faster than the speed of light (c = 3x10<sup>8</sup> m/s). That is impossible, nothing can go faster than light in a vacuum. Yet we still detect muons. So how is that possible ? This is due to relativistic time dilation. You might never have heard of it, but you’ve definitely heard of the guy who came up with it. It rhymes with Halpert Feinstein.
+        
+        Relativistic time dilation is a concept from the theory of relativity, where time is experienced differently depending on the relative speed of an object. As an object moves closer to the speed of light, time appears to slow down for it relative to a stationary observer. In the case of muons, although they have a short lifespan, their high velocity causes time to pass more slowly for them from our perspective on Earth. This allows them to travel much farther than expected before decaying, making their detection on the Earth's surface possible.
+        </p>
+        <img src="{{ url_for('static', filename='images/muon.png') }}" alt="Muon Diagram" style="max-width: 100%; height: auto;">
+            
+    </section>
+</body>
+</html>
