@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Muonitor - Bringing the cosmos closer to you</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        /* Styling for the navigation bar */
+        nav {
+            background-color: #333;
+            overflow: hidden;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: center;
+        }
+        nav ul {
+            list-style-type: none;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            gap: 120px;
+        }
+        nav ul li a {
+            display: block;
+            color: white;
+            text-align: center;
+            padding: 14px 16px;
+            text-decoration: none;
+        }
+        nav ul li a:hover {
+            background-color: #ddd;
+            color: black;
+        }
+        nav::after {
+            content: "";
+            display: table;
+            clear: both;
+        }
+        /* Existing table styling */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        table, th, td {
+            border: 1px solid black;
+        }
+        th, td {
+            padding: 8px;
+            text-align: left;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation bar -->
+    <nav>
+        <ul>
+            <li><a href="/">The M(U)ONITOR</a></li>
+            <li><a href="/muons">More about muons</a></li>
+            <li><a href="/cosmic">The Cosmic Watch</a></li>
+            <li><a href="/about">About the project</a></li>
+        </ul>
+    </nav>
+    
+    <p style="text-align: right;">Today's date: <span id="current-date"></span></p>
+    
+    <h1 style="text-align: center;">The M(U)ONITOR :</h1>
+    
+    <h2 style="text-align: center;">Live data from a Cosmic Watch to study cosmic rays behavior</h2>
+    
+    <p style="text-align: center;">Launched on September 17, 2024 </p>
+    
+    <p>Welcome Earthling! You're looking at live data from a muon detector. Below you will find the number of muons that pass through the detector and at which rate. Muons are produced in high-energy interactions, such as cosmic ray interactions with the Earth's atmosphere.</p>
+    
+    <p>Total muon count: <span id="total-muon-count">0</span></p>
+    <p>Muon count today: <span id="daily-muon-count">0</span></p>
+    <p>Time since launch: <span id="uptime">0</span></p>
+    <p>Hit rate: <span id="hit-rate">0</span> hits/sec</p>
+    
+    <!-- Add a canvas for the live chart -->
+    <h2>Live chart</h2>
+    <canvas id="muonChart" width="400" height="200"></canvas>
+    <!-- Add a date picker to select a specific date -->
+    <h2>Select a date to view muon count</h2>
+    <input type="date" id="datePicker" />
+    <button onclick="fetchMuonDataByDate()">Show muon count</button>
+    <!-- Display the selected date and its muon count -->
+    <p>Selected date: <span id="selected-date"></span></p>
+    <p>Muon count for that day: <span id="muon-count">N/A</span></p>
+    <script>
+        let ctx = document.getElementById('muonChart').getContext('2d');
+        let muonChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Muon count per day',
+                    data: [],
+                    backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                scales: {
+                    x: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Day of the year'
+                        }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Muon count'
+                        }
+                    }
+                }
+            }
+        });
+        function updateData() {
+            fetch('/update')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('total-muon-count').innerText = data.total_count;
+                    document.getElementById('daily-muon-count').innerText = data.daily_counts[new Date().toISOString().split('T')[0]] || 0;
+                    document.getElementById('uptime').innerText = data.uptime;
+                    document.getElementById('hit-rate').innerText = data.hit_rate;
+                    // Update the chart
+                    let chartLabels = Object.keys(data.daily_counts);
+                    let chartData = Object.values(data.daily_counts);
+                    muonChart.data.labels = chartLabels;
+                    muonChart.data.datasets[0].data = chartData;
+                    muonChart.update();
+                });
+        }
+        // Function to fetch and display muon count for the selected date
+        function fetchMuonDataByDate() {
+            let selectedDate = document.getElementById('datePicker').value;
+            if (!selectedDate) {
+                alert('Please select a date.');
+                return;
+            }
+            fetch('/update')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('selected-date').innerText = selectedDate;
+                    let count = data.daily_counts[selectedDate] || 'No data available';
+                    document.getElementById('muon-count').innerText = count;
+                });
+        }
+        //get today's date
+        const today = new Date();
+        const options = { year: 'numeric', month: 'long', day: 'numeric' };
+        const formattedDate = today.toLocaleDateString("en-US", options);
+        document.getElementById('current-date').textContent = formattedDate;
+        
+        setInterval(updateData, 1000); // Update every second
+    </script>
+</body>
+</html>
