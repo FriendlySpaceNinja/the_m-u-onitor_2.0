@@ -1,22 +1,19 @@
-import serial
-import threading
-import json
 import time
-from flask import Flask, render_template, jsonify
+from flask import Flask, render_template, request, jsonify
+
 app = Flask(__name__)
-# Initialize a dictionary to store the data received from the Arduino
+
+# Initialize a dictionary to store the data received from the Arduino (sent by the local machine)
 data = {
     "count": 0,
     "uptime": "00:00:00",
-    "sensor_name": "",
+    "sensor_name": "Cosmic Watch",
     "hit_rate": "0.00",
     "total_count": 0,
-    "daily_counts": {}
+    "daily_counts": {},
+    "start_time": None
 }
-# Store the start time when the script starts running
-start_time = time.time()
-# Variable to track the last count received from the Arduino
-previous_count = 0
+
 # Function to format uptime in hh:mm:ss format
 def get_uptime():
     elapsed_time = time.time() - start_time
@@ -24,12 +21,13 @@ def get_uptime():
     hours = int((elapsed_time % 86400) // 3600)
     minutes = int((elapsed_time % 3600) // 60)
     seconds = int(elapsed_time % 60)
-    
+
     # Build the formatted uptime string
     if days > 0:
         return f"{hours}h:{minutes}m:{seconds}s - ({days} days)"
     else:
         return f"{hours}h:{minutes}m:{seconds}s"
+
 # Function to calculate hit rate
 def calculate_hit_rate():
     elapsed_time = time.time() - start_time
@@ -37,6 +35,7 @@ def calculate_hit_rate():
         return data['total_count'] / elapsed_time
     else:
         return 0
+
 # Function to reset the daily count at midnight
 def reset_daily_count():
     while True:
@@ -46,79 +45,38 @@ def reset_daily_count():
             current_day = time.strftime('%Y-%m-%d')
             data["daily_counts"][current_day] = 0
         time.sleep(60)  # Sleep for a minute before checking again
-# Function to read data from the Arduino
-def read_from_arduino():
-    global data, previous_count
-    try:
-        # Open a serial connection to the Arduino on the specified port and baud rate
-        ser = serial.Serial('/dev/tty.usbserial-1410', 9600)
-        while True:
-            # Read a line of data from the serial port, decode it, and strip any extra whitespace
-            line = ser.readline().decode('utf-8').strip()
-            print(f"Raw data from Arduino: {line}")  # Debug print
-            # Check if the line contains the JSON data (e.g., starts with '{' and ends with '}')
-            if line.startswith("{") and line.endswith("}"):
-                try:
-                    # Attempt to parse the line as JSON and update the data dictionary
-                    json_data = json.loads(line)
-                    data.update(json_data)
-                    print(f"Updated data: {data}")  # Debug print
-                    # Get the current count from the Arduino
-                    current_count = int(json_data.get('count', 0))
-                    
-                    # Calculate the difference between the current and previous counts
-                    count_difference = current_count - previous_count
-                    
-                    # Ensure we only add positive count differences
-                    if count_difference > 0:
-                        # Update total and daily counts based on the count difference
-                        current_day = time.strftime('%Y-%m-%d')
-                        if current_day not in data['daily_counts']:
-                            data['daily_counts'][current_day] = 0
-                        data['daily_counts'][current_day] += count_difference
-                        data['total_count'] += count_difference
-                    # Update previous_count for the next iteration
-                    previous_count = current_count
-                    
-                except json.JSONDecodeError as e:
-                    print(f"Error parsing JSON: {e}")
-            else:
-                print("Received non-JSON data, skipping.")
-    except serial.SerialException as e:
-        print(f"Serial error: {e}")
-    finally:
-        if ser.is_open:
-            ser.close()
-            print("Serial port closed.")
+
 @app.route('/')
 def index():
-    return render_template('index.html', data=data, sensor_name=data['sensor_name'])
-@app.route('/update', methods=['GET'])
+    return render_template('index.html', data=data)
+
+@app.route('/update', methods=['POST', 'GET'])
 def update():
     global data
-    # Calculate uptime and hit rate
-    data['uptime'] = get_uptime()
-    data['hit_rate'] = f"{calculate_hit_rate():.2f}"
-    print(f"Data sent to client: {data}")  # Debug print
-    return jsonify(data)
-    
+    if request.method == 'POST':
+        # Expecting a JSON payload from the local machine with the updated data
+        json_data = request.get_json()
+        if json_data:
+            data.update(json_data)
+            # Recalculate uptime and hit rate on the server side
+            data['uptime'] = get_uptime()
+            data['hit_rate'] = f"{calculate_hit_rate():.2f}"
+            print(f"Updated data received: {data}")  # Debug print
+            return jsonify({"status": "success"})
+        else:
+            return jsonify({"status": "error", "message": "No data received"}), 400
+    elif request.method == 'GET':
+        # Return the latest data to the webpage
+        return jsonify(data)
+
 @app.route('/muons')
 def muons():
     return render_template('muons.html')
-    
+
 @app.route('/cosmic')
 def cosmic():
     return render_template('cosmic.html')
-    
+
 @app.route('/about')
-def cosmic():
+def about():
     return render_template('about.html')
-if __name__ == '__main__':
-    # Start a thread to read data from the Arduino
-    arduino_thread = threading.Thread(target=read_from_arduino)
-    arduino_thread.start()
-    # Start a thread to reset the daily count at midnight
-    reset_thread = threading.Thread(target=reset_daily_count)
-    reset_thread.start()
-    # Start the Flask web server
-    app.run(debug=True, use_reloader=False)
